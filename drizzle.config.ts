@@ -1,18 +1,12 @@
 import { defineConfig } from "drizzle-kit";
 
-process.loadEnvFile()
-
-function envOrThrow(key: string): string {
-  const val = process.env[key];
-  if (!val) throw new Error(`missing ${key}`);
-  return val;
-}
+import { config } from "./src/api/config.js";
 
 export default defineConfig({
   schema: "src/db/schema.ts",
-  out: "src/db",
+  out: "src/db/migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: envOrThrow("DB_URL"),
+    url: config.db.dbURL,
   },
 });

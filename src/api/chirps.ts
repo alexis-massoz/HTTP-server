@@ -1,0 +1,70 @@
+import { Request, Response } from "express";
+import { respondWithError, respondWithJSON } from "./json.js";
+import { BadRequestError } from "./errors.js";
+import { createChirp, getChirp, getChirps } from "../db/queries/chirps.js";
+import { chirps, NewChirp } from "../db/schema.js";
+import { db } from "../db/index.js";
+import { isNotNull } from "drizzle-orm";
+
+export async function handlerChirps(req: Request, res: Response) {
+  type parameters = {
+    body: string;
+    userId: string;
+  };
+  const params: parameters = req.body;
+
+  const maxChirpLength = 140;
+  if (params.body.length > maxChirpLength) {
+    throw new BadRequestError(`Chirp is too long. Max length is ${maxChirpLength}`);
+   };
+
+  const words = params.body.split(" ");
+
+  const badWords = ["kerfuffle", "sharbert", "fornax"];
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const loweredWord = word.toLowerCase();
+    if (badWords.includes(loweredWord)) {
+      words[i] = "****";
+    }
+  }
+
+  const cleaned = words.join(" ");
+  
+  const newChirp: NewChirp = {
+      body: cleaned,
+      userId: params.userId
+  };
+
+  const result = await createChirp(newChirp);
+
+  respondWithJSON(res, 201, {
+    id: result.id,
+    createdAt: result.createdAt,
+    updatedAt: result.updatedAt,
+    body: result.body,
+    userId: result.userId
+  });
+};
+
+export async function handlerChirpsRetrieve(_: Request, res: Response) {
+  const result = getChirps()
+  respondWithJSON(res, 200, result);
+}
+
+export async function handlerChirpRetrieve(req:Request, res: Response) {
+  const { chirpId } = req.params;
+  if (typeof chirpId !== "string") {
+    respondWithError(res, 404, "Chirp ID incorrect");
+    return;
+  }
+  const chirp = await getChirp(chirpId);
+  if (chirp.length !== 0) {
+    respondWithJSON(res, 200, chirp[0]);
+    return;
+  };
+  respondWithError(res, 404, "Chirp not found");
+  return;
+};
+  
+  

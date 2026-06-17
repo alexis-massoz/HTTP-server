@@ -19,7 +19,7 @@ export function middlewareMetrics(
     __: Response, 
     next: NextFunction,
 ) {
-    config.fileserverHits += 1;
+    config.api.fileserverHits += 1;
     next();
 };
 
