@@ -23,9 +23,14 @@ export type DBConfig = {
   migrationConfig: MigrationConfig;
 }
 
+export type JwtConfig = {
+  secret: string;
+};
+
 export type AppConfig = {
   api: APIConfig;
   db: DBConfig;
+  jwt: JwtConfig;
 }
 
 export const config: AppConfig = { 
@@ -38,5 +43,8 @@ export const config: AppConfig = {
     dbURL: envOrThrow("DB_URL"),
     migrationConfig: migrationConfig,
   },
-}
+  jwt: {
+    secret: envOrThrow("SECRET"),
+  },
+};
 

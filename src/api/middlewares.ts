@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { config } from "./config.js";
 import { respondWithError } from "./json.js";
-import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from "./errors.js";
+import { BadRequestError, UserForbiddenError, NotFoundError, UserNotAuthenticatedError } from "./errors.js";
 
 export function middlewareLogResponses(
     req: Request, 
@@ -36,11 +36,11 @@ export function middlewareErrorHandling(
         statusCode = 400;
         message = err.message;
     };
-    if (err instanceof UnauthorizedError) {
+    if (err instanceof UserNotAuthenticatedError) {
         statusCode = 401;
         message = err.message;
     }
-    if (err instanceof ForbiddenError) {
+    if (err instanceof UserForbiddenError) {
         statusCode = 403;
         message = err.message;
     }

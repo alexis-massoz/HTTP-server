@@ -1,14 +1,42 @@
-import argon2 from "argon2";
+import { getUserByEmail } from "../db/queries/users.js";
+import { checkPasswordHash, makeJWT } from "../auth.js";
+import { respondWithJSON } from "./json.js";
+import { UserNotAuthenticatedError } from "./errors.js";
 
-export async function hashPassword(password: string): Promise<string> {
-    const hash = await argon2.hash(password);
-    return hash;
+import type { Request, Response } from "express";
+import type { UserResponse } from "./users.js";
+import { config } from "./config.js";
+
+export async function handlerLogin(req: Request, res: Response) {
+  type parameters = {
+    password: string;
+    email: string;
+    expiresInSeconds?: number;
+  };
+
+  const params: parameters = req.body;
+
+  const user = await getUserByEmail(params.email);
+  if (!user) {
+    throw new UserNotAuthenticatedError("incorrect email or password");
+  }
+
+  const matching = await checkPasswordHash(
+    params.password,
+    user.hashedPassword,
+  );
+  if (!matching) {
+    throw new UserNotAuthenticatedError("incorrect email or password");
+  }
+
+  const token = makeJWT(user.id, params.expiresInSeconds = 3600, config.jwt.secret);
+
+
+  respondWithJSON(res, 200, {
+    id: user.id,
+    email: user.email,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    token: token,
+  });
 }
-
-export async function checkPasswordHash(password: string, hash: string): Promise<boolean> {
-    if (await argon2.verify(hash, password)) {
-        return true;
-    } else {
-        return false;
-    }
-}   

@@ -9,7 +9,8 @@ import { handlerMetrics,  } from "./api/metrics.js";
 import { handlerChirps, handlerChirpsRetrieve, handlerChirpRetrieve } from "./api/chirps.js";
 import { handlerReset } from "./api/reset.js";
 import { config } from "./api/config.js";
-import { handlerUser, handlerLogin } from "./api/users.js";
+import { handlerUsersCreate } from "./api/users.js";
+import { handlerLogin } from "./api/auth.js";
 
 const migrationClient = postgres(config.db.dbURL, { max: 1 });
 await migrate(drizzle(migrationClient), config.db.migrationConfig);
@@ -42,7 +43,7 @@ app.post("/api/chirps", (req, res, next) => {
 });
 
 app.post("/api/users", (req, res, next) => {
-  Promise.resolve(handlerUser(req, res)).catch(next);
+  Promise.resolve(handlerUsersCreate(req, res)).catch(next);
 });
 
 app.post("/api/login", (req, res, next) => {

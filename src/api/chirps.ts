@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
 import { respondWithError, respondWithJSON } from "./json.js";
-import { BadRequestError } from "./errors.js";
+import { BadRequestError, UserNotAuthenticatedError } from "./errors.js";
 import { createChirp, getChirp, getChirps } from "../db/queries/chirps.js";
-import { chirps, NewChirp } from "../db/schema.js";
-import { db } from "../db/index.js";
-import { isNotNull } from "drizzle-orm";
+import { NewChirp } from "../db/schema.js";
+import { getBearerToken, validateJWT } from "../auth.js";
+import { config } from "./config.js";
 
 export async function handlerChirps(req: Request, res: Response) {
+  const token = getBearerToken(req);
+  const userId = validateJWT(token, config.jwt.secret);
   type parameters = {
     body: string;
-    userId: string;
   };
   const params: parameters = req.body;
 
@@ -33,7 +34,7 @@ export async function handlerChirps(req: Request, res: Response) {
   
   const newChirp: NewChirp = {
       body: cleaned,
-      userId: params.userId
+      userId: userId,
   };
 
   const result = await createChirp(newChirp);
