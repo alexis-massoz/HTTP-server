@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
 import { Request } from "express";
 import { UserNotAuthenticatedError } from "./api/errors.js";
+import { randomBytes } from "node:crypto";
 
 export async function hashPassword(password: string): Promise<string> {
     const hash = await argon2.hash(password);
@@ -50,8 +51,12 @@ export function validateJWT(tokenString: string, secret: string) {
 
 export function getBearerToken(req: Request) {
     const header = req.get('Authorization');
-    if (typeof(header) === 'undefined') {
-        throw new Error('Not token found');
+    if (!header || !header.startsWith('Bearer ')) {
+        throw new UserNotAuthenticatedError('No token found');
     }
     return header.split(' ')[1];
+}
+
+export function makeRefreshToken() {
+  return randomBytes(32).toString('hex');
 }

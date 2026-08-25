@@ -1,17 +1,17 @@
 import { getUserByEmail } from "../db/queries/users.js";
-import { checkPasswordHash, makeJWT } from "../auth.js";
+import { checkPasswordHash, makeJWT, makeRefreshToken } from "../auth.js";
 import { respondWithJSON } from "./json.js";
 import { UserNotAuthenticatedError } from "./errors.js";
 
 import type { Request, Response } from "express";
-import type { UserResponse } from "./users.js";
 import { config } from "./config.js";
+import { createRefreshToken } from "../db/queries/refreshTokens.js";
+import { NewRefreshToken } from "../db/schema.js";
 
 export async function handlerLogin(req: Request, res: Response) {
   type parameters = {
     password: string;
     email: string;
-    expiresInSeconds?: number;
   };
 
   const params: parameters = req.body;
@@ -29,7 +29,14 @@ export async function handlerLogin(req: Request, res: Response) {
     throw new UserNotAuthenticatedError("incorrect email or password");
   }
 
-  const token = makeJWT(user.id, params.expiresInSeconds = 3600, config.jwt.secret);
+  const token = makeJWT(user.id, 3600, config.jwt.secret);
+  const newRefreshToken: NewRefreshToken = {
+    token: makeRefreshToken(),
+    userId: user.id,
+    expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),// 60 days (days * hours * minutes * seconds * ms) 
+    revokedAt: null,
+  };
+  const refreshToken = await createRefreshToken(newRefreshToken);
 
 
   respondWithJSON(res, 200, {
@@ -38,5 +45,16 @@ export async function handlerLogin(req: Request, res: Response) {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     token: token,
+    refreshToken: refreshToken.token,
+    isChirpyRed: user.isChirpyRed,
   });
+}
+
+
+export function getAPIKey(req: Request) {
+  const header = req.get('Authorization')?.split(' ');
+  if (!header || header[0] !== 'ApiKey' || !header[1]) {
+    throw new UserNotAuthenticatedError('No API key found');
+  }
+  return header[1];
 }
